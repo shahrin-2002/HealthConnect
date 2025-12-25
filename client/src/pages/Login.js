@@ -1,22 +1,24 @@
 /**
  * Login Page Component
- * Matches the login.jpeg design
+ * Email + Password login (no OTP/2FA)
  */
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Auth.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  const successMessage = location.state?.message;
 
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
-
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +27,6 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
@@ -33,7 +34,6 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
       return;
@@ -45,10 +45,14 @@ const Login = () => {
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        // Redirect to dashboard or home page
-        navigate('/dashboard');
+        const role = result.user?.role;
+        if (role === 'Hospital_Admin' || role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        setError(result.error);
+        setError(result.error || 'Login failed');
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -63,7 +67,7 @@ const Login = () => {
       <div className="auth-header">
         <button className="hamburger-menu">☰</button>
         <h1>HealthConnect</h1>
-        <div></div> {/* Spacer for flex layout */}
+        <div></div>
       </div>
 
       {/* Navigation */}
@@ -73,12 +77,8 @@ const Login = () => {
         </div>
         <ul className="nav-links">
           <li><Link to="/hospitals">Hospitals</Link></li>
-          <li><Link to="/ambulance">Ambulance</Link></li>
           <li><Link to="/doctors">Doctors</Link></li>
-          <li><Link to="/locations">Locations</Link></li>
-          <li><Link to="/booking">Booking</Link></li>
-          <li><Link to="/contact">Contact</Link></li>
-          <li><Link to="/link">Link</Link></li>
+          <li><Link to="/appointments">Appointments</Link></li>
         </ul>
         <div className="nav-buttons">
           <Link to="/register">
@@ -96,6 +96,7 @@ const Login = () => {
 
           <h2>Log In</h2>
 
+          {successMessage && <div className="success-message">{successMessage}</div>}
           {error && <div className="error-message">{error}</div>}
 
           <form onSubmit={handleSubmit}>

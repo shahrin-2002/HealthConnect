@@ -1,376 +1,237 @@
 /**
- * Doctor Routes
- * Handles doctor directory endpoints with search and filter functionality
+ * Doctor Routes - MongoDB Version
+ * Combined: Existing Search/Filter + New Availability Logic
  */
 
 const express = require('express');
 const { verifyToken, checkRole } = require('../middleware/auth');
+const Doctor = require('../models/Doctor');
+const Hospital = require('../models/Hospital');
 
 const router = express.Router();
 
 /**
  * GET /api/doctors
- * Get all doctors with search and filter functionality
- *
- * Query Parameters (optional):
- * - search: Search by doctor name
- * - specialization: Filter by specialization (e.g., Cardiology, Orthopedics)
- * - hospital_id: Filter by hospital ID
- * - availability_status: Filter by status (Available, Busy, On_Leave)
- * - limit: Number of results (default: 10)
- * - offset: Pagination offset (default: 0)
- *
- * Example: GET /api/doctors?specialization=Cardiology&hospital_id=1&limit=5
+ * Get all doctors with search and filter
  */
 router.get('/', async (req, res) => {
   try {
     const { search, specialization, hospital_id, availability_status, limit = 10, offset = 0 } = req.query;
 
-    const connection = await req.pool.getConnection();
+    let query = {};
 
-    try {
-      let query = `
-        SELECT d.id, u.name, d.specialization, d.experience_years, d.consultation_fee,
-               d.availability_status, d.license_number, d.qualifications, d.created_at,
-               h.name as hospital_name, h.id as hospital_id
-        FROM doctors d
-        JOIN users u ON d.user_id = u.id
-        JOIN hospitals h ON d.hospital_id = h.id
-        WHERE 1=1
-      `;
-      const params = [];
-
-      // Add search filter (searches by doctor name)
-      if (search) {
-        query += ' AND u.name LIKE ?';
-        params.push(`%${search}%`);
-      }
-
-      // Add specialization filter
-      if (specialization) {
-        query += ' AND d.specialization = ?';
-        params.push(specialization);
-      }
-
-      // Add hospital filter
-      if (hospital_id) {
-        query += ' AND d.hospital_id = ?';
-        params.push(hospital_id);
-      }
-
-      // Add availability status filter
-      if (availability_status) {
-        query += ' AND d.availability_status = ?';
-        params.push(availability_status);
-      }
-
-      // Add limit and offset for pagination
-      query += ' LIMIT ? OFFSET ?';
-      params.push(parseInt(limit), parseInt(offset));
-
-      // Execute query
-      const [doctors] = await connection.query(query, params);
-
-      // Get total count for pagination info
-      let countQuery = `
-        SELECT COUNT(*) as total FROM doctors d
-        JOIN users u ON d.user_id = u.id
-        JOIN hospitals h ON d.hospital_id = h.id
-        WHERE 1=1
-      `;
-      const countParams = [];
-
-      if (search) {
-        countQuery += ' AND u.name LIKE ?';
-        countParams.push(`%${search}%`);
-      }
-      if (specialization) {
-        countQuery += ' AND d.specialization = ?';
-        countParams.push(specialization);
-      }
-      if (hospital_id) {
-        countQuery += ' AND d.hospital_id = ?';
-        countParams.push(hospital_id);
-      }
-      if (availability_status) {
-        countQuery += ' AND d.availability_status = ?';
-        countParams.push(availability_status);
-      }
-
-      const [countResult] = await connection.query(countQuery, countParams);
-      const total = countResult[0].total;
-
-      res.status(200).json({
-        message: 'Doctors retrieved successfully',
-        total,
-        count: doctors.length,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        data: doctors
-      });
-    } finally {
-      connection.release();
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
     }
+    if (specialization) {
+      query.specialization = { $regex: specialization, $options: 'i' };
+    }
+    if (hospital_id) {
+      query.hospital_id = hospital_id;
+    }
+    if (availability_status) {
+      query.availability_status = availability_status;
+    }
+
+    const total = await Doctor.countDocuments(query);
+    const doctors = await Doctor.find(query)
+      .populate('hospital_id', 'name city')
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+
+    // Transform to include hospital_name
+    const transformedDoctors = doctors.map(doc => ({
+      ...doc.toObject(),
+      hospital_name: doc.hospital_id?.name,
+      city: doc.hospital_id?.city
+    }));
+
+    res.status(200).json({
+      message: 'Doctors retrieved successfully',
+      total,
+      count: doctors.length,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      data: transformedDoctors
+    });
   } catch (error) {
     console.error('Get doctors error:', error);
-    res.status(500).json({
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ error: 'Server Error', message: error.message });
+  }
+});
+
+/**
+ * GET /api/doctors/profile/me
+ * Get logged-in doctor's own profile (for Manage Schedule page)
+ * Placed BEFORE /:id to prevent conflict
+ */
+router.get('/profile/me', verifyToken, checkRole('doctor'), async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ user_id: req.user.id });
+    if (!doctor) return res.status(404).json({ error: 'Doctor profile not found' });
+    res.json(doctor);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/doctors/availability/me
+ * Update logged-in doctor's availability
+ */
+router.put('/availability/me', verifyToken, checkRole('doctor'), async (req, res) => {
+  try {
+    const { slotDuration, availability } = req.body;
+
+    // Find doctor linked to the logged-in user
+    const doctor = await Doctor.findOne({ user_id: req.user.id });
+
+    if (!doctor) {
+      return res.status(404).json({ error: 'Doctor profile not found. Please contact admin to link your profile.' });
+    }
+
+    doctor.slotDuration = slotDuration;
+    doctor.availability = availability;
+    await doctor.save();
+
+    res.json({ message: 'Schedule updated successfully', doctor });
+  } catch (error) {
+    console.error('Update availability error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/doctors/:id/slots
+ * Get available slots for a specific date
+ */
+router.get('/:id/slots', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query; // Format YYYY-MM-DD
+
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+
+    const doctor = await Doctor.findById(id);
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+
+    // 1. Find the day of the week
+    const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+
+    // 2. Check if doctor works on this day
+    const schedule = doctor.availability?.find(s => s.day === dayOfWeek && s.isAvailable);
+
+    if (!schedule) {
+      return res.json({ date, slots: [], message: 'Doctor is not available on this day' });
+    }
+
+    // 3. Generate slots
+    const slots = [];
+    const duration = doctor.slotDuration || 30; // Default to 30 mins if undefined
+
+    let current = new Date(`${date}T${schedule.startTime}`);
+    const end = new Date(`${date}T${schedule.endTime}`);
+
+    while (current < end) {
+      // Format as HH:MM
+      const timeString = current.toTimeString().slice(0, 5);
+      slots.push(timeString);
+      current.setMinutes(current.getMinutes() + duration);
+    }
+
+    res.json({ date, slots });
+  } catch (error) {
+    console.error('Get slots error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 /**
  * GET /api/doctors/:id
  * Get doctor details by ID
- *
- * URL Parameters:
- * - id: Doctor ID
  */
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const doctor = await Doctor.findById(req.params.id)
+      .populate('hospital_id', 'name city location');
 
-    const connection = await req.pool.getConnection();
-
-    try {
-      // Fetch doctor by ID with hospital and user info
-      const [doctors] = await connection.query(
-        `SELECT d.id, u.name, u.email, u.phone, u.address, d.specialization,
-                d.experience_years, d.consultation_fee, d.availability_status,
-                d.license_number, d.qualifications, d.created_at,
-                h.name as hospital_name, h.id as hospital_id, h.location, h.city
-         FROM doctors d
-         JOIN users u ON d.user_id = u.id
-         JOIN hospitals h ON d.hospital_id = h.id
-         WHERE d.id = ?`,
-        [id]
-      );
-
-      if (doctors.length === 0) {
-        return res.status(404).json({
-          error: 'Not Found',
-          message: 'Doctor not found'
-        });
-      }
-
-      res.status(200).json({
-        message: 'Doctor details retrieved successfully',
-        data: doctors[0]
-      });
-    } finally {
-      connection.release();
+    if (!doctor) {
+      return res.status(404).json({ error: 'Not Found', message: 'Doctor not found' });
     }
+
+    res.status(200).json({
+      message: 'Doctor details retrieved successfully',
+      data: {
+        ...doctor.toObject(),
+        hospital_name: doctor.hospital_id?.name,
+        city: doctor.hospital_id?.city
+      }
+    });
   } catch (error) {
     console.error('Get doctor error:', error);
-    res.status(500).json({
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ error: 'Server Error', message: error.message });
   }
 });
 
 /**
  * POST /api/doctors
- * Create a new doctor (Hospital Admin only)
- *
- * Authorization: Requires JWT token with Hospital_Admin role
- *
- * Request Body:
- * {
- *   "user_id": 2,
- *   "hospital_id": 1,
- *   "specialization": "Cardiology",
- *   "license_number": "LIC123456789",
- *   "experience_years": 10,
- *   "qualifications": "MBBS, MD (Cardiology)",
- *   "consultation_fee": 500.00,
- *   "availability_status": "Available"
- * }
+ * Create a new doctor (Admin only)
  */
-router.post('/', verifyToken, checkRole('Hospital_Admin'), async (req, res) => {
+router.post('/', verifyToken, checkRole('admin'), async (req, res) => {
   try {
-    const { user_id, hospital_id, specialization, license_number, experience_years, qualifications, consultation_fee, availability_status } = req.body;
+    const { name, hospital_id, specialization, license_number, experience_years, qualifications, consultation_fee, availability_status, phone, email } = req.body;
 
-    // Validate required fields
-    if (!user_id || !hospital_id || !specialization) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'user_id, hospital_id, and specialization are required'
-      });
+    if (!name || !hospital_id || !specialization) {
+      return res.status(400).json({ error: 'Bad Request', message: 'name, hospital_id, and specialization are required' });
     }
 
-    const connection = await req.pool.getConnection();
+    const doctor = await Doctor.create({
+      name,
+      hospital_id,
+      specialization,
+      license_number,
+      experience_years,
+      qualifications,
+      consultation_fee,
+      availability_status,
+      phone,
+      email,
+      // Default availability
+      availability: [],
+      slotDuration: 30
+    });
 
-    try {
-      // Check if user exists and is a Doctor
-      const [users] = await connection.query(
-        'SELECT id, role FROM users WHERE id = ?',
-        [user_id]
-      );
-
-      if (users.length === 0) {
-        return res.status(404).json({
-          error: 'Not Found',
-          message: 'User not found'
-        });
-      }
-
-      if (users[0].role !== 'Doctor') {
-        return res.status(400).json({
-          error: 'Bad Request',
-          message: 'User must have Doctor role'
-        });
-      }
-
-      // Check if hospital exists
-      const [hospitals] = await connection.query(
-        'SELECT id FROM hospitals WHERE id = ?',
-        [hospital_id]
-      );
-
-      if (hospitals.length === 0) {
-        return res.status(404).json({
-          error: 'Not Found',
-          message: 'Hospital not found'
-        });
-      }
-
-      // Check if doctor already registered at this hospital
-      const [existingDoctors] = await connection.query(
-        'SELECT id FROM doctors WHERE user_id = ? AND hospital_id = ?',
-        [user_id, hospital_id]
-      );
-
-      if (existingDoctors.length > 0) {
-        return res.status(409).json({
-          error: 'Conflict',
-          message: 'Doctor is already registered at this hospital'
-        });
-      }
-
-      // Check if license number is unique
-      if (license_number) {
-        const [licenseExists] = await connection.query(
-          'SELECT id FROM doctors WHERE license_number = ?',
-          [license_number]
-        );
-
-        if (licenseExists.length > 0) {
-          return res.status(409).json({
-            error: 'Conflict',
-            message: 'License number already exists'
-          });
-        }
-      }
-
-      // Insert new doctor
-      const [result] = await connection.query(
-        `INSERT INTO doctors (user_id, hospital_id, specialization, license_number, experience_years, qualifications, consultation_fee, availability_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user_id, hospital_id, specialization, license_number || null, experience_years || 0, qualifications || null, consultation_fee || 0, availability_status || 'Available']
-      );
-
-      res.status(201).json({
-        message: 'Doctor registered successfully',
-        doctor: {
-          id: result.insertId,
-          user_id,
-          hospital_id,
-          specialization,
-          license_number,
-          experience_years,
-          qualifications,
-          consultation_fee,
-          availability_status: availability_status || 'Available'
-        }
-      });
-    } finally {
-      connection.release();
-    }
+    res.status(201).json({ message: 'Doctor registered successfully', doctor });
   } catch (error) {
     console.error('Create doctor error:', error);
-    res.status(500).json({
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ error: 'Server Error', message: error.message });
   }
 });
 
 /**
  * PUT /api/doctors/:id
- * Update doctor details (Hospital Admin only)
- *
- * Authorization: Requires JWT token with Hospital_Admin role
- *
- * URL Parameters:
- * - id: Doctor ID
- *
- * Request Body: Any fields to update
- * {
- *   "specialization": "Orthopedics",
- *   "availability_status": "On_Leave",
- *   "consultation_fee": 600.00
- * }
+ * Update doctor (Admin only)
  */
-router.put('/:id', verifyToken, checkRole('Hospital_Admin'), async (req, res) => {
+router.put('/:id', verifyToken, checkRole('admin'), async (req, res) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
+    delete updates._id;
 
-    // Prevent updating critical fields
-    delete updates.user_id;
-    delete updates.hospital_id;
-    delete updates.id;
+    const doctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
 
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'No fields to update'
-      });
+    if (!doctor) {
+      return res.status(404).json({ error: 'Not Found', message: 'Doctor not found' });
     }
 
-    const connection = await req.pool.getConnection();
-
-    try {
-      // Check if doctor exists
-      const [doctors] = await connection.query(
-        'SELECT id FROM doctors WHERE id = ?',
-        [id]
-      );
-
-      if (doctors.length === 0) {
-        return res.status(404).json({
-          error: 'Not Found',
-          message: 'Doctor not found'
-        });
-      }
-
-      // Build dynamic UPDATE query
-      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-      const values = [...Object.values(updates), id];
-
-      await connection.query(
-        `UPDATE doctors SET ${setClause} WHERE id = ?`,
-        values
-      );
-
-      res.status(200).json({
-        message: 'Doctor updated successfully',
-        doctor: {
-          id: parseInt(id),
-          ...updates
-        }
-      });
-    } finally {
-      connection.release();
-    }
+    res.status(200).json({ message: 'Doctor updated successfully', doctor });
   } catch (error) {
     console.error('Update doctor error:', error);
-    res.status(500).json({
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ error: 'Server Error', message: error.message });
   }
 });
 
