@@ -48,8 +48,6 @@ const Dashboard = () => {
             </ul>
           </li>
           <li><Link to="/appointments">Appointments</Link></li>
-          <li><Link to="/profile">Profile</Link></li>
-          <li><Link to="/documents">Documents</Link></li>
         </ul>
         <div className="nav-buttons">
           <button className="btn-dark" onClick={handleLogout}>
@@ -118,11 +116,6 @@ const Dashboard = () => {
                   <Link to="/appointments">
                     <button className="btn-submit" style={{ padding: '10px 20px' }}>
                       📅 My Appointments
-                    </button>
-                  </Link>
-                  <Link to="/documents">
-                    <button className="btn-submit" style={{ padding: '10px 20px' }}>
-                      📄 My Documents
                     </button>
                   </Link>
                 </div>

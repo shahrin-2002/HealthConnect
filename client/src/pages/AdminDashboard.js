@@ -1,57 +1,52 @@
-import { useEffect, useState } from 'react';
-import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminDashboard() {
-  const [pending, setPending] = useState([]);
-  const [msg, setMsg] = useState('');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const load = async () => {
-    try {
-      const { data } = await api.get('/admin/documents');
-      setPending(data.documents || []);
-    } catch {
-      setMsg('Failed to load pending documents');
-    }
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const verify = async (id) => {
-    await api.patch(`/admin/documents/${id}/verify`);
-    load();
-  };
-
-  const reject = async (id) => {
-    const notes = prompt('Rejection reason?') || '';
-    await api.patch(`/admin/documents/${id}/reject`, { notes });
-    load();
-  };
-
-  const lockUser = async (userId) => {
-    await api.patch(`/admin/users/${userId}/lock`);
-    setMsg('User locked');
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
-        <h2>Admin Dashboard</h2>
-        <ul>
-          {pending.map(d => (
-            <li key={d._id}>
-              {d.user?.name} – {d.originalName} – {d.verified ? '✅ Verified' : '⏳ Pending'} –
-              <a href={`/api/documents/preview/${d.filename}`} target="_blank" rel="noreferrer">Preview</a>
-              {!d.verified && (
-                <>
-                  <button onClick={() => verify(d._id)}>Verify</button>
-                  <button onClick={() => reject(d._id)}>Reject</button>
-                </>
-              )}
-              <button onClick={() => lockUser(d.user?._id)}>Lock User</button>
-            </li>
-          ))}
+      <div className="auth-header">
+        <button className="hamburger-menu">☰</button>
+        <h1>HealthConnect</h1>
+        <div></div>
+      </div>
+
+      <nav className="auth-nav">
+        <div className="nav-logo">
+          <span>🏥</span>
+        </div>
+        <ul className="nav-links">
+          <li><a href="/hospitals">Hospitals</a></li>
+          <li><a href="/doctors">Doctors</a></li>
         </ul>
-        {msg && <p>{msg}</p>}
+        <div className="nav-buttons">
+          <button className="btn-dark" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      </nav>
+
+      <div className="auth-content">
+        <div className="auth-card">
+          <h2>Admin Dashboard</h2>
+          {user && (
+            <div style={{ marginTop: '20px' }}>
+              <p><strong>Welcome,</strong> {user.name}</p>
+              <p><strong>Role:</strong> {user.role}</p>
+            </div>
+          )}
+          <div style={{ marginTop: '30px' }}>
+            <h3>Admin Features</h3>
+            <p>Hospital and Doctor management coming soon.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

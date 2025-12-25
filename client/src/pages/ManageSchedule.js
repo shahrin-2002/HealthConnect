@@ -96,8 +96,6 @@ const ManageSchedule = () => {
           <li><Link to="/hospitals">Hospitals</Link></li>
           <li><Link to="/doctors">Doctors</Link></li>
           <li><Link to="/appointments">Appointments</Link></li>
-          <li><Link to="/profile">Profile</Link></li>
-          <li><Link to="/documents">Documents</Link></li>
         </ul>
         <div className="nav-buttons">
           <Link to="/dashboard">
