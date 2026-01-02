@@ -32,7 +32,9 @@ const ProtectedRoute = ({ children }) => {
     return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  // Check both context state and localStorage to handle race condition
+  const hasToken = isAuthenticated || localStorage.getItem('token');
+  return hasToken ? children : <Navigate to="/login" />;
 };
 
 // Public Route Component (redirect to dashboard if already logged in)
@@ -43,7 +45,9 @@ const PublicRoute = ({ children }) => {
     return <div>Loading...</div>;
   }
 
-  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
+  // Check both context state and localStorage for consistency
+  const hasToken = isAuthenticated || localStorage.getItem('token');
+  return !hasToken ? children : <Navigate to="/dashboard" />;
 };
 
 // Role Guard Component (for role-based routes)
