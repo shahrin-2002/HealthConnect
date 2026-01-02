@@ -26,9 +26,10 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['patient', 'doctor', 'admin'],
+    enum: ['patient', 'doctor', 'admin', 'lab'],
     default: 'patient'
   },
+
   phone: {
     type: String,
     default: null,
@@ -45,6 +46,14 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   date_of_birth: {
+    type: Date,
+    default: null
+  },
+  otp: {
+    type: String,
+    default: null
+  },
+  otpExpires: {
     type: Date,
     default: null
   }
