@@ -79,6 +79,8 @@ const Login = () => {
           <li><Link to="/booking">Booking</Link></li>
           <li><Link to="/contact">Contact</Link></li>
           <li><Link to="/link">Link</Link></li>
+          <li><Link to="/blood-donation">Blood</Link></li>
+          <li><Link to="/health-tips">Tips</Link></li>
         </ul>
         <div className="nav-buttons">
           <Link to="/register">

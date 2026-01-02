@@ -2,7 +2,7 @@ const router = require('express').Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const auth = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 const DocumentController = require('../controllers/documentController');
 
 // Ensure uploads directory exists
@@ -22,12 +22,12 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Upload new document
-router.post('/', auth, upload.single('file'), (req, res) => DocumentController.upload(req, res));
+router.post('/', verifyToken, upload.single('file'), (req, res) => DocumentController.upload(req, res));
 
 // Preview document file
 router.get('/preview/:filename', (req, res) => DocumentController.preview(req, res));
 
 // Delete document
-router.delete('/:id', auth, (req, res) => DocumentController.remove(req, res));
+router.delete('/:id', verifyToken, (req, res) => DocumentController.remove(req, res));
 
 module.exports = router;

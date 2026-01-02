@@ -31,6 +31,12 @@ const Dashboard = () => {
           <span>🏥</span>
         </div>
         <div className="nav-buttons">
+          <button className="btn-outline" onClick={() => navigate('/blood-donation')} style={{ marginRight: '10px' }}>
+            Blood
+          </button>
+          <button className="btn-outline" onClick={() => navigate('/health-tips')} style={{ marginRight: '10px' }}>
+            Tips
+          </button>
           <button className="btn-dark" onClick={handleLogout}>
             Logout
           </button>

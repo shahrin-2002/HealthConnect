@@ -10,8 +10,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/profile';
-import Documents from './pages/Documents';
+import Documents from './pages/Document';
 import AdminDashboard from './pages/AdminDashboard';
+import BloodDonation from './pages/BloodDonation';
+import HealthTips from './pages/HealthTips';
 import './App.css';
 
 // Protected Route Component
@@ -102,6 +104,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/blood-donation" element={<BloodDonation />} />
+        <Route path="/health-tips" element={<HealthTips />} />
 
         {/* 404 - Catch all */}
         <Route path="*" element={<Navigate to="/login" />} />

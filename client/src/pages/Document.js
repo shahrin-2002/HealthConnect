@@ -1,9 +1,9 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import axios from '../services/api';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Documents() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [list, setList] = useState([]);
   const [type, setType] = useState('NID');
   const [file, setFile] = useState(null);

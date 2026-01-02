@@ -1,9 +1,9 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import axios from '../services/api';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, getProfile } = useAuth();
   const [form, setForm] = useState(user || {});
   const [msg, setMsg] = useState('');
 
@@ -12,8 +12,9 @@ export default function Profile() {
   const save = async () => {
     setMsg('');
     try {
+      // Note: This endpoint might not exist in backend yet
       const { data } = await axios.put('/users/me', form);
-      setUser(data.user || data);
+      await getProfile();
       setMsg('Profile updated');
     } catch (err) {
       setMsg(err.response?.data?.error || 'Update failed');

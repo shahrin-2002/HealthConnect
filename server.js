@@ -13,6 +13,11 @@ require('dotenv').config();
 const initAuthRoutes = require('./routes/auth');
 const hospitalRoutes = require('./routes/hospitals');
 const doctorRoutes = require('./routes/doctors');
+const userRoutes = require('./routes/userRoutes');
+const documentRoutes = require('./routes/documentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const bloodRoutes = require('./routes/bloodRoutes');
+const tipRoutes = require('./routes/tipRoutes');
 
 const app = express();
 
@@ -43,6 +48,11 @@ mongoose.connection.on('error', (error) => {
 app.use('/api/auth', initAuthRoutes());
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/blood-requests', bloodRoutes);
+app.use('/api/health-tips', tipRoutes);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
