@@ -1,6 +1,7 @@
 /**
  * Main App Component
  * Updated with Member-2 Feature: Doctor Schedule Management Route
+ * Includes Blood Donation and Health Tips features
  */
 
 import React from 'react';
@@ -10,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import BloodDonation from './pages/BloodDonation';
+import HealthTips from './pages/HealthTips';
 import PatientAppointments from './pages/PatientAppointments';
 import DoctorSlots from './pages/DoctorSlots';
 import HospitalSearch from './pages/HospitalSearch';
@@ -103,6 +106,10 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        {/* Blood Donation and Health Tips Routes */}
+        <Route path="/blood-donation" element={<BloodDonation />} />
+        <Route path="/health-tips" element={<HealthTips />} />
 
         {/* Hospital and Doctor Search */}
         <Route path="/hospitals" element={<HospitalSearch />} />

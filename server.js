@@ -20,6 +20,10 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const icuRoutes = require('./routes/icuRoutes');
 const generalBedRoutes = require('./routes/generalBedRoutes');
 const cabinRoutes = require('./routes/cabinRoutes');
+const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const bloodRoutes = require('./routes/bloodRoutes');
+const tipRoutes = require('./routes/tipRoutes');
 
 // Import models for Socket.io handlers
 const Appointment = require('./models/Appointment');
@@ -244,6 +248,10 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/icu', icuRoutes);
 app.use('/api/general-bed', generalBedRoutes);
 app.use('/api/cabin', cabinRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/blood-requests', bloodRoutes);
+app.use('/api/health-tips', tipRoutes);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
