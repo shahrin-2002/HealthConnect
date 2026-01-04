@@ -43,9 +43,12 @@ const DoctorSearch = () => {
       setDoctors(data);
       setTotal(response.data.total || data.length);
 
-      // Auto-select first doctor if available
-      if (data.length > 0 && !selectedDoctor) {
-        handleSelectDoctor(data[0]); // Changed to use the handler to reset slots
+      // Auto-select first doctor from search results
+      if (data.length > 0) {
+        handleSelectDoctor(data[0]);
+      } else {
+        // Clear selection if no results
+        setSelectedDoctor(null);
       }
     } catch (err) {
       setError('Failed to load doctors');
