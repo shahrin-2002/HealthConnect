@@ -122,8 +122,7 @@ export default function DoctorSlots() {
 
   // Initiate video call
   const initiateCall = (appointment) => {
-    const patientId = appointment.patientId?._id || appointment.patientId;
-    socketService.initiateCall(appointment._id, patientId);
+    socketService.initiateCall(appointment._id);
     setCallStates(prev => ({ ...prev, [appointment._id]: 'waiting' }));
   };
 

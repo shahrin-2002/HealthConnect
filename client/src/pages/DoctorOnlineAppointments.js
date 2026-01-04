@@ -147,8 +147,7 @@ export default function DoctorOnlineAppointments() {
   };
 
   const initiateCall = (appointment) => {
-    const patientId = appointment.patientId?._id || appointment.patientId;
-    socketService.initiateCall(appointment._id, patientId);
+    socketService.initiateCall(appointment._id);
     setCallStates(prev => ({ ...prev, [appointment._id]: 'waiting' }));
     setMessage({ type: 'info', text: 'Calling patient... waiting for response' });
   };

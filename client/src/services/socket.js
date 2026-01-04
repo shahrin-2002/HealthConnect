@@ -52,9 +52,9 @@ class SocketService {
 
   // ========== Call Events ==========
 
-  // Doctor initiates call to patient
-  initiateCall(appointmentId, patientId) {
-    this.socket?.emit('call:initiate', { appointmentId, patientId });
+  // Doctor initiates call to patient (server gets patientId from appointment)
+  initiateCall(appointmentId) {
+    this.socket?.emit('call:initiate', { appointmentId });
   }
 
   // Patient confirms ready for call

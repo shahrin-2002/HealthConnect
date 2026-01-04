@@ -69,8 +69,9 @@ io.on('connection', (socket) => {
   userSockets.set(socket.userId, socket.id);
 
   // Doctor initiates call to patient
-  socket.on('call:initiate', async ({ appointmentId, patientId }) => {
+  socket.on('call:initiate', async ({ appointmentId }) => {
     try {
+      // Fetch appointment with patient info from database (don't trust client data)
       const appt = await Appointment.findById(appointmentId).populate('doctorId');
       if (!appt || appt.type !== 'online') {
         socket.emit('call:error', { message: 'Invalid appointment' });
@@ -81,8 +82,16 @@ io.on('connection', (socket) => {
       const doctor = await Doctor.findById(appt.doctorId);
       const doctorName = doctor?.name || 'Doctor';
 
-      // Convert patientId to string for consistent lookup
-      const patientIdStr = patientId.toString();
+      // Get patientId from the appointment document (not from client)
+      // Handle both populated and non-populated cases
+      const patientIdStr = appt.patientId?._id?.toString() || appt.patientId?.toString();
+
+      if (!patientIdStr) {
+        socket.emit('call:error', { message: 'Patient not found in appointment' });
+        return;
+      }
+
+      console.log(`[Socket] call:initiate - Doctor: ${socket.userId}, Patient from DB: ${patientIdStr}`);
 
       // Store call state
       activeCalls.set(appointmentId, {
