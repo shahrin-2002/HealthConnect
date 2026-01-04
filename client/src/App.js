@@ -1,6 +1,7 @@
 /**
  * Main App Component
- * Sets up routing and auth context
+ * Updated with Member-2 Feature: Doctor Schedule Management Route
+ * Includes Blood Donation and Health Tips features
  */
 
 import React from 'react';
@@ -9,11 +10,21 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/profile';
-import Documents from './pages/Document';
 import AdminDashboard from './pages/AdminDashboard';
 import BloodDonation from './pages/BloodDonation';
 import HealthTips from './pages/HealthTips';
+import PatientAppointments from './pages/PatientAppointments';
+import DoctorSlots from './pages/DoctorSlots';
+import HospitalSearch from './pages/HospitalSearch';
+import DoctorSearch from './pages/DoctorSearch';
+// ✅ Member-2: Import the new Manage Schedule page
+import ManageSchedule from './pages/ManageSchedule';
+// Doctor Online Appointments
+import DoctorOnlineAppointments from './pages/DoctorOnlineAppointments';
+// Booking Pages
+import ICUBooking from './pages/ICUBooking';
+import GeneralBedBooking from './pages/GeneralBedBooking';
+import CabinBooking from './pages/CabinBooking';
 import './App.css';
 
 // Protected Route Component
@@ -24,7 +35,9 @@ const ProtectedRoute = ({ children }) => {
     return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  // Check both context state and localStorage to handle race condition
+  const hasToken = isAuthenticated || localStorage.getItem('token');
+  return hasToken ? children : <Navigate to="/login" />;
 };
 
 // Public Route Component (redirect to dashboard if already logged in)
@@ -35,13 +48,18 @@ const PublicRoute = ({ children }) => {
     return <div>Loading...</div>;
   }
 
-  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
+  // Check both context state and localStorage for consistency
+  const hasToken = isAuthenticated || localStorage.getItem('token');
+  return !hasToken ? children : <Navigate to="/dashboard" />;
 };
 
-// Role Guard Component (for admin-only routes)
+// Role Guard Component (for role-based routes)
 const RoleGuard = ({ role, children }) => {
   const { user } = useAuth();
-  return user?.role === role ? children : <div>Access denied</div>;
+  // Allow if user matches role (case-insensitive), otherwise deny
+  const userRole = user?.role?.toLowerCase();
+  const requiredRole = role?.toLowerCase();
+  return userRole === requiredRole ? children : <div>Access denied</div>;
 };
 
 function AppContent() {
@@ -79,22 +97,6 @@ function AppContent() {
           }
         />
         <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents"
-          element={
-            <ProtectedRoute>
-              <Documents />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/admin"
           element={
             <ProtectedRoute>
@@ -105,8 +107,62 @@ function AppContent() {
           }
         />
 
+        {/* Blood Donation and Health Tips Routes */}
         <Route path="/blood-donation" element={<BloodDonation />} />
         <Route path="/health-tips" element={<HealthTips />} />
+
+        {/* Hospital and Doctor Search */}
+        <Route path="/hospitals" element={<HospitalSearch />} />
+        <Route path="/doctors" element={<DoctorSearch />} />
+
+        {/* Booking Routes */}
+        <Route path="/booking/icu" element={<ICUBooking />} />
+        <Route path="/booking/general-bed" element={<GeneralBedBooking />} />
+        <Route path="/booking/cabin" element={<CabinBooking />} />
+
+        {/* Appointment routes */}
+        <Route
+          path="/appointments"
+          element={
+            <ProtectedRoute>
+              <PatientAppointments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/appointments"
+          element={
+            <ProtectedRoute>
+              <RoleGuard role="Doctor">
+                <DoctorSlots />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ Member-2: Doctor Schedule Management Route */}
+        <Route
+          path="/doctor/schedule"
+          element={
+            <ProtectedRoute>
+              <RoleGuard role="doctor">
+                <ManageSchedule />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Doctor Online Appointments */}
+        <Route
+          path="/doctor/online-appointments"
+          element={
+            <ProtectedRoute>
+              <RoleGuard role="doctor">
+                <DoctorOnlineAppointments />
+              </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
 
         {/* 404 - Catch all */}
         <Route path="*" element={<Navigate to="/login" />} />
@@ -124,4 +180,3 @@ function App() {
 }
 
 export default App;
-

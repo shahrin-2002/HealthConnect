@@ -12,6 +12,7 @@ const router = express.Router();
 // Initialize controller
 const initAuthRoutes = () => {
   const authController = new AuthController();
+  router.post('/verify-otp', (req, res) => authController.verifyOtp(req, res));
 
   /**
    * POST /api/auth/signup

@@ -1,9 +1,10 @@
 /**
  * Dashboard Page - After successful login
+ * Updated to include Doctor Availability Button
  */
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Auth.css';
 
@@ -15,6 +16,9 @@ const Dashboard = () => {
     logout();
     navigate('/login');
   };
+
+  // Helper to check if user is a doctor (handles case sensitivity)
+  const isDoctor = user?.role?.toLowerCase() === 'doctor';
 
   return (
     <div className="auth-container">
@@ -30,6 +34,21 @@ const Dashboard = () => {
         <div className="nav-logo">
           <span>🏥</span>
         </div>
+        <ul className="nav-links">
+          <li><Link to="/hospitals">Hospitals</Link></li>
+          <li><Link to="/doctors">Doctors</Link></li>
+          <li className="nav-dropdown">
+            <span className="nav-dropdown-toggle">
+              Booking <span className="dropdown-arrow">▼</span>
+            </span>
+            <ul className="nav-dropdown-menu">
+              <li><Link to="/booking/icu">ICU</Link></li>
+              <li><Link to="/booking/general-bed">General Bed</Link></li>
+              <li><Link to="/booking/cabin">Cabin</Link></li>
+            </ul>
+          </li>
+          <li><Link to="/appointments">Appointments</Link></li>
+        </ul>
         <div className="nav-buttons">
           <button className="btn-outline" onClick={() => navigate('/blood-donation')} style={{ marginRight: '10px' }}>
             Blood
@@ -67,6 +86,45 @@ const Dashboard = () => {
                 )}
                 {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
                 {user.address && <p><strong>Address:</strong> {user.address}</p>}
+              </div>
+
+              {/* Quick Links */}
+              <div style={{ marginTop: '30px' }}>
+                <h3 style={{ marginBottom: '15px', color: '#2B2B2B' }}>Quick Links</h3>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  
+                  {/* Doctor-only buttons */}
+                  {isDoctor && (
+                    <>
+                      <Link to="/doctor/online-appointments">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white' }}>
+                          📹 Online Appointments
+                        </button>
+                      </Link>
+                      <Link to="/doctor/schedule">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#2B2B2B', color: 'white' }}>
+                          🕒 Manage Availability
+                        </button>
+                      </Link>
+                    </>
+                  )}
+
+                  <Link to="/hospitals">
+                    <button className="btn-submit" style={{ padding: '10px 20px' }}>
+                      🏥 Find Hospitals
+                    </button>
+                  </Link>
+                  <Link to="/doctors">
+                    <button className="btn-submit" style={{ padding: '10px 20px' }}>
+                      👨‍⚕️ Find Doctors
+                    </button>
+                  </Link>
+                  <Link to="/appointments">
+                    <button className="btn-submit" style={{ padding: '10px 20px' }}>
+                      📅 My Appointments
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           )}
