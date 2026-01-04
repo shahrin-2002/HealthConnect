@@ -79,6 +79,9 @@ const Login = () => {
           <li><Link to="/hospitals">Hospitals</Link></li>
           <li><Link to="/doctors">Doctors</Link></li>
           <li><Link to="/appointments">Appointments</Link></li>
+          <li><Link to="/blood-donation">Blood</Link></li>
+          <li><Link to="/health-tips">Tips</Link></li>
+          <li><Link to="/lab-tests">Lab Tests</Link></li>
         </ul>
         <div className="nav-buttons">
           <Link to="/register">

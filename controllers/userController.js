@@ -1,13 +1,11 @@
 const User = require('../models/User');
-const Document = require('../models/Document');
 
 class UserController {
   async getProfile(req, res) {
     try {
       const user = await User.findById(req.user.id).lean();
       if (!user) return res.status(404).json({ error: 'User not found' });
-      const documents = await Document.find({ user: req.user.id }).lean();
-      res.json({ user, documents });
+      res.json({ user });
     } catch {
       res.status(500).json({ error: 'Error fetching profile' });
     }

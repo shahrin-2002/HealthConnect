@@ -1,6 +1,7 @@
 /**
  * Main App Component
  * Updated with Member-2 Feature: Doctor Schedule Management Route
+ * Includes Blood Donation and Health Tips features
  */
 
 import React from 'react';
@@ -10,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import BloodDonation from './pages/BloodDonation';
+import HealthTips from './pages/HealthTips';
 import PatientAppointments from './pages/PatientAppointments';
 import DoctorSlots from './pages/DoctorSlots';
 import HospitalSearch from './pages/HospitalSearch';
@@ -22,6 +25,12 @@ import DoctorOnlineAppointments from './pages/DoctorOnlineAppointments';
 import ICUBooking from './pages/ICUBooking';
 import GeneralBedBooking from './pages/GeneralBedBooking';
 import CabinBooking from './pages/CabinBooking';
+// Lab Test Feature
+import LabTest from './pages/LabTest';
+import LabTestAdmin from './pages/LabTestAdmin';
+// Medicine Store Feature
+import MedicineStore from './pages/MedicineStore';
+import MedicineAdmin from './pages/MedicineAdmin';
 import './App.css';
 
 // Protected Route Component
@@ -57,6 +66,14 @@ const RoleGuard = ({ role, children }) => {
   const userRole = user?.role?.toLowerCase();
   const requiredRole = role?.toLowerCase();
   return userRole === requiredRole ? children : <div>Access denied</div>;
+};
+
+// Admin Role Guard (accepts both Hospital_Admin and admin)
+const AdminRoleGuard = ({ children }) => {
+  const { user } = useAuth();
+  const userRole = user?.role?.toLowerCase();
+  const isAdmin = userRole === 'hospital_admin' || userRole === 'admin';
+  return isAdmin ? children : <div>Access denied. Admin privileges required.</div>;
 };
 
 function AppContent() {
@@ -97,12 +114,16 @@ function AppContent() {
           path="/admin"
           element={
             <ProtectedRoute>
-              <RoleGuard role="Hospital_Admin">
+              <AdminRoleGuard>
                 <AdminDashboard />
-              </RoleGuard>
+              </AdminRoleGuard>
             </ProtectedRoute>
           }
         />
+
+        {/* Blood Donation and Health Tips Routes */}
+        <Route path="/blood-donation" element={<BloodDonation />} />
+        <Route path="/health-tips" element={<HealthTips />} />
 
         {/* Hospital and Doctor Search */}
         <Route path="/hospitals" element={<HospitalSearch />} />
@@ -153,6 +174,32 @@ function AppContent() {
               <RoleGuard role="doctor">
                 <DoctorOnlineAppointments />
               </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Lab Test Routes */}
+        <Route path="/lab-tests" element={<LabTest />} />
+        <Route
+          path="/admin/lab-tests"
+          element={
+            <ProtectedRoute>
+              <AdminRoleGuard>
+                <LabTestAdmin />
+              </AdminRoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Medicine Store Routes */}
+        <Route path="/medicine-store" element={<ProtectedRoute><MedicineStore /></ProtectedRoute>} />
+        <Route
+          path="/admin/medicine-orders"
+          element={
+            <ProtectedRoute>
+              <AdminRoleGuard>
+                <MedicineAdmin />
+              </AdminRoleGuard>
             </ProtectedRoute>
           }
         />

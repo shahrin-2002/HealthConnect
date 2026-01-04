@@ -20,6 +20,9 @@ const Dashboard = () => {
   // Helper to check if user is a doctor (handles case sensitivity)
   const isDoctor = user?.role?.toLowerCase() === 'doctor';
 
+  // Helper to check if user is an admin
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'hospital_admin';
+
   return (
     <div className="auth-container">
       {/* Header */}
@@ -50,6 +53,12 @@ const Dashboard = () => {
           <li><Link to="/appointments">Appointments</Link></li>
         </ul>
         <div className="nav-buttons">
+          <button className="btn-outline" onClick={() => navigate('/blood-donation')} style={{ marginRight: '10px' }}>
+            Blood
+          </button>
+          <button className="btn-outline" onClick={() => navigate('/health-tips')} style={{ marginRight: '10px' }}>
+            Tips
+          </button>
           <button className="btn-dark" onClick={handleLogout}>
             Logout
           </button>
@@ -86,7 +95,7 @@ const Dashboard = () => {
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ marginBottom: '15px', color: '#2B2B2B' }}>Quick Links</h3>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  
+
                   {/* Doctor-only buttons */}
                   {isDoctor && (
                     <>
@@ -98,6 +107,22 @@ const Dashboard = () => {
                       <Link to="/doctor/schedule">
                         <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#2B2B2B', color: 'white' }}>
                           🕒 Manage Availability
+                        </button>
+                      </Link>
+                    </>
+                  )}
+
+                  {/* Admin-only buttons */}
+                  {isAdmin && (
+                    <>
+                      <Link to="/admin/lab-tests">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                          ⚙️ Lab Test Administration
+                        </button>
+                      </Link>
+                      <Link to="/admin/medicine-orders">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
+                          💊 Medicine Store Control
                         </button>
                       </Link>
                     </>
@@ -116,6 +141,16 @@ const Dashboard = () => {
                   <Link to="/appointments">
                     <button className="btn-submit" style={{ padding: '10px 20px' }}>
                       📅 My Appointments
+                    </button>
+                  </Link>
+                  <Link to="/lab-tests">
+                    <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
+                      🧪 Lab Tests
+                    </button>
+                  </Link>
+                  <Link to="/medicine-store">
+                    <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                      💊 Medicine Store
                     </button>
                   </Link>
                 </div>
