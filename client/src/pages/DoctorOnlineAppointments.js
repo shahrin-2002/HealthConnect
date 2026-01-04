@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { appointmentsAPI } from '../services/api';
+import { appointmentsAPI, doctorAPI } from '../services/api';
 import socketService from '../services/socket';
 import VideoCallModal from '../components/VideoCallModal';
 import './DoctorOnlineAppointments.css';
@@ -23,8 +23,26 @@ export default function DoctorOnlineAppointments() {
   // Load online appointments
   const loadAppointments = useCallback(async () => {
     try {
+      let doctorId = user?.doctorId;
+
+      // If doctorId not in user object, fetch from doctor profile API
+      if (!doctorId) {
+        try {
+          const profileRes = await doctorAPI.getMyProfile();
+          doctorId = profileRes.data?._id;
+        } catch {
+          // Profile fetch failed
+        }
+      }
+
+      if (!doctorId) {
+        setMsg('Doctor profile not found');
+        setLoading(false);
+        return;
+      }
+
       // Get doctor's appointments and filter for online type
-      const { data } = await appointmentsAPI.doctor(user?.doctorId);
+      const { data } = await appointmentsAPI.doctor(doctorId);
       const onlineAppts = (data.appointments || []).filter(a => a.type === 'online');
       setAppointments(onlineAppts);
 
@@ -77,12 +95,12 @@ export default function DoctorOnlineAppointments() {
 
   // Load appointments on mount
   useEffect(() => {
-    if (user?.doctorId) {
+    if (user) {
       loadAppointments();
     } else {
       setLoading(false);
     }
-  }, [user?.doctorId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initiate call to patient
   const initiateCall = (appointment) => {

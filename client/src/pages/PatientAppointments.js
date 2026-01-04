@@ -13,7 +13,14 @@ import '../styles/Appointments.css';
 
 export default function PatientAppointments() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  // Redirect doctors to doctor appointments page
+  useEffect(() => {
+    if (user?.role?.toLowerCase() === 'doctor') {
+      navigate('/doctor/appointments', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Booking form state
   const [appointmentType, setAppointmentType] = useState('in-person');

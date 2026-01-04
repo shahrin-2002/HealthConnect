@@ -507,6 +507,45 @@
   border-color: #8BC9A8;
 }
 
+/* Filter Section (Doctor Page) */
+.filter-section {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 30px;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 15px;
+  background: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.filter-btn {
+  padding: 12px 30px;
+  background: #f5f5f5;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.filter-btn:hover {
+  background: #e8e8e8;
+  border-color: #ccc;
+}
+
+.filter-btn.active {
+  background: #2B2B2B;
+  color: white;
+  border-color: #2B2B2B;
+}
+
 /* Appointments Grid */
 .appointments-grid {
   display: grid;

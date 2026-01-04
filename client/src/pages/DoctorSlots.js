@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { appointmentsAPI } from '../services/api';
+import { appointmentsAPI, doctorAPI } from '../services/api';
 import socketService from '../services/socket';
 import VideoCallModal from '../components/VideoCallModal';
 import '../styles/Appointments.css';
@@ -56,12 +56,24 @@ export default function DoctorSlots() {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const doctorId = user?.doctorId || user?._id;
+      let doctorId = user?.doctorId;
+
+      // If doctorId not in user object, fetch from doctor profile API
       if (!doctorId) {
-        setMessage({ type: 'error', text: 'Doctor ID not found' });
+        try {
+          const profileRes = await doctorAPI.getMyProfile();
+          doctorId = profileRes.data?._id;
+        } catch {
+          // Profile fetch failed, doctor might not be set up
+        }
+      }
+
+      if (!doctorId) {
+        setMessage({ type: 'error', text: 'Doctor profile not found. Please contact support.' });
         setLoading(false);
         return;
       }
+
       const { data } = await appointmentsAPI.doctor(doctorId);
       setAppointments(data.appointments || []);
     } catch (err) {
@@ -188,26 +200,21 @@ export default function DoctorSlots() {
         </div>
       )}
 
-      {/* Type Selector */}
-      <div className="booking-section">
-        <h3>&#128197; Appointment Type</h3>
-        <div className="type-selector">
-          <div
-            className={`type-card ${appointmentType === 'online' ? 'selected' : ''}`}
-            onClick={() => setAppointmentType('online')}
-          >
-            <span className="type-icon">&#128249;</span>
-            <h4>Online Consultations</h4>
-            <p>Video call appointments</p>
-          </div>
-          <div
-            className={`type-card ${appointmentType === 'in-person' ? 'selected' : ''}`}
+      {/* Filter Tabs */}
+      <div className="filter-section">
+        <div className="filter-tabs">
+          <button
+            className={`filter-btn ${appointmentType === 'in-person' ? 'active' : ''}`}
             onClick={() => setAppointmentType('in-person')}
           >
-            <span className="type-icon">&#127973;</span>
-            <h4>In-Person Visits</h4>
-            <p>Hospital appointments</p>
-          </div>
+            &#127973; In-Person
+          </button>
+          <button
+            className={`filter-btn ${appointmentType === 'online' ? 'active' : ''}`}
+            onClick={() => setAppointmentType('online')}
+          >
+            &#128249; Online
+          </button>
         </div>
       </div>
 
