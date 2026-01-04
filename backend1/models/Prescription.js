@@ -5,6 +5,6 @@ const prescriptionSchema = new mongoose.Schema({
   doctorName: String,
   medicines: [String],
   qrCode: String
-}, { timestamps: true });
+});
 
 export default mongoose.model("Prescription", prescriptionSchema);

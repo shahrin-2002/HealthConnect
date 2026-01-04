@@ -10,7 +10,7 @@ export const sendOtp = async (email, otp) => {
   });
 
   await transporter.sendMail({
-    from: "Healthcare App",
+    from: "HealthConnect",
     to: email,
     subject: "Your OTP Code",
     text: `Your OTP is ${otp}`

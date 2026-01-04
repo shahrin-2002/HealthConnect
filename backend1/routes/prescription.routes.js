@@ -5,18 +5,19 @@ import { generateQR } from "../utils/generateQR.js";
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { patientName, doctorName, medicines } = req.body;
-
-  const qr = await generateQR(patientName + doctorName);
+  const qr = await generateQR(JSON.stringify(req.body));
 
   const prescription = await Prescription.create({
-    patientName,
-    doctorName,
-    medicines,
+    ...req.body,
     qrCode: qr
   });
 
   res.json(prescription);
+});
+
+router.get("/qr/:id", async (req, res) => {
+  const p = await Prescription.findById(req.params.id);
+  res.send(`<img src="${p.qrCode}" />`);
 });
 
 export default router;

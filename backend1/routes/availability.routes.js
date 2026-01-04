@@ -5,11 +5,12 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
   await Availability.create(req.body);
-  res.json({ message: "Availability saved" });
+  res.json({ message: "Slot booked" });
 });
 
 router.get("/:doctorId", async (req, res) => {
-  res.json(await Availability.find({ doctorId: req.params.doctorId }));
+  const slots = await Availability.find({ doctorId: req.params.doctorId });
+  res.json(slots);
 });
 
 export default router;
