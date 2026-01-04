@@ -67,7 +67,23 @@ const checkRole = (allowedRoles) => {
   };
 };
 
+/**
+ * Admin Role Check Middleware
+ * Shorthand for checking if user is a Hospital Admin
+ */
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'Hospital_Admin' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'Access denied. Admin privileges required.'
+    });
+  }
+  next();
+};
+
 module.exports = {
   verifyToken,
-  checkRole
+  checkRole,
+  authenticateToken: verifyToken, // Alias for clarity
+  isAdmin
 };
