@@ -114,11 +114,18 @@ const Dashboard = () => {
 
                   {/* Admin-only buttons */}
                   {isAdmin && (
-                    <Link to="/admin/lab-tests">
-                      <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
-                        ⚙️ Lab Test Administration
-                      </button>
-                    </Link>
+                    <>
+                      <Link to="/admin/lab-tests">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                          ⚙️ Lab Test Administration
+                        </button>
+                      </Link>
+                      <Link to="/admin/medicine-orders">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
+                          💊 Medicine Store Control
+                        </button>
+                      </Link>
+                    </>
                   )}
 
                   <Link to="/hospitals">
@@ -139,6 +146,11 @@ const Dashboard = () => {
                   <Link to="/lab-tests">
                     <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
                       🧪 Lab Tests
+                    </button>
+                  </Link>
+                  <Link to="/medicine-store">
+                    <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                      💊 Medicine Store
                     </button>
                   </Link>
                 </div>

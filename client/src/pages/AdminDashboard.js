@@ -66,6 +66,13 @@ export default function AdminDashboard() {
               >
                 🏠 Home Collections
               </button>
+              <button
+                className="btn-submit"
+                style={{ padding: '15px 25px', backgroundColor: '#8e44ad', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => navigate('/admin/medicine-orders')}
+              >
+                💊 Medicine Orders
+              </button>
             </div>
             <p style={{ marginTop: '20px', color: '#666' }}>Hospital and Doctor management coming soon.</p>
           </div>
