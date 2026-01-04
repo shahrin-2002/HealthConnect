@@ -111,9 +111,9 @@ function AppContent() {
           path="/admin"
           element={
             <ProtectedRoute>
-              <RoleGuard role="Hospital_Admin">
+              <AdminRoleGuard>
                 <AdminDashboard />
-              </RoleGuard>
+              </AdminRoleGuard>
             </ProtectedRoute>
           }
         />

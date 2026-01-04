@@ -44,13 +44,27 @@ export default function AdminDashboard() {
           )}
           <div style={{ marginTop: '30px' }}>
             <h3>Admin Features</h3>
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ marginTop: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
               <button
                 className="btn-submit"
-                style={{ padding: '15px 30px', backgroundColor: '#8e44ad', color: 'white' }}
+                style={{ padding: '15px 25px', backgroundColor: '#3498db', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
                 onClick={() => navigate('/admin/lab-tests')}
               >
-                🧪 Manage Lab Tests
+                🧪 Manage Tests
+              </button>
+              <button
+                className="btn-submit"
+                style={{ padding: '15px 25px', backgroundColor: '#e67e22', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => navigate('/admin/lab-tests')}
+              >
+                📋 Manage Bookings
+              </button>
+              <button
+                className="btn-submit"
+                style={{ padding: '15px 25px', backgroundColor: '#27ae60', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => navigate('/admin/lab-tests')}
+              >
+                🏠 Home Collections
               </button>
             </div>
             <p style={{ marginTop: '20px', color: '#666' }}>Hospital and Doctor management coming soon.</p>
