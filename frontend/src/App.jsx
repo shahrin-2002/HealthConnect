@@ -1,19 +1,19 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Pages
+
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 
-// Member-2 Modules
-import TwoFactorPage from "./pages/TwoFactorPage"; // Module 1 - 2FA
-import DoctorAvailabilityPage from "./pages/DoctorAvailabilityPage"; // Module 2
-import EPrescriptionPage from "./pages/EPrescriptionPage"; // Module 3
-import AmbulanceBookingPage from "./pages/AmbulanceBookingPage"; // Module 3
 
-// Styles
+import TwoFactorPage from "./pages/TwoFactorPage"; 
+import DoctorAvailabilityPage from "./pages/DoctorAvailabilityPage"; 
+import EPrescriptionPage from "./pages/EPrescriptionPage"; 
+import AmbulanceBookingPage from "./pages/AmbulanceBookingPage"; 
+
+
 import "./styles/global.css";
 
 function App() {

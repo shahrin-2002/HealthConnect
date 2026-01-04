@@ -2,16 +2,16 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 
-dotenv.config(); // Load .env first
+dotenv.config(); 
 
 const app = express();
 
-// Connect to MongoDB
+
 connectDB();
 
 app.use(express.json());
 
-// Example routes (update with your actual routes)
+
 app.use("/api/auth", import("./routes/otp.routes.js"));
 app.use("/api/prescriptions", import("./routes/prescription.routes.js"));
 

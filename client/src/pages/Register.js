@@ -77,8 +77,8 @@ const Register = () => {
       const result = await signup(userData);
 
       if (result.success) {
-        // Redirect to dashboard after successful registration
-        navigate('/dashboard');
+        // Redirect to login page for OTP verification
+        navigate('/login', { state: { message: 'Account created! Please login to verify with OTP.' } });
       } else {
         setError(result.error);
       }
