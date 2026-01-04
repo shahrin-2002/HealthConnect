@@ -28,6 +28,9 @@ import CabinBooking from './pages/CabinBooking';
 // Lab Test Feature
 import LabTest from './pages/LabTest';
 import LabTestAdmin from './pages/LabTestAdmin';
+// Medicine Store Feature
+import MedicineStore from './pages/MedicineStore';
+import MedicineAdmin from './pages/MedicineAdmin';
 import './App.css';
 
 // Protected Route Component
@@ -111,9 +114,9 @@ function AppContent() {
           path="/admin"
           element={
             <ProtectedRoute>
-              <RoleGuard role="Hospital_Admin">
+              <AdminRoleGuard>
                 <AdminDashboard />
-              </RoleGuard>
+              </AdminRoleGuard>
             </ProtectedRoute>
           }
         />
@@ -183,6 +186,19 @@ function AppContent() {
             <ProtectedRoute>
               <AdminRoleGuard>
                 <LabTestAdmin />
+              </AdminRoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Medicine Store Routes */}
+        <Route path="/medicine-store" element={<ProtectedRoute><MedicineStore /></ProtectedRoute>} />
+        <Route
+          path="/admin/medicine-orders"
+          element={
+            <ProtectedRoute>
+              <AdminRoleGuard>
+                <MedicineAdmin />
               </AdminRoleGuard>
             </ProtectedRoute>
           }
