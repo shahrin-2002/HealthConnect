@@ -26,6 +26,8 @@ const bloodRoutes = require('./routes/bloodRoutes');
 const tipRoutes = require('./routes/tipRoutes');
 const labTestRoutes = require('./routes/labTestRoutes');
 const testBookingRoutes = require('./routes/testBookingRoutes');
+const medicineRoutes = require('./routes/medicineRoutes');
+const medicineOrderRoutes = require('./routes/medicineOrderRoutes');
 
 // Import models for Socket.io handlers
 const Appointment = require('./models/Appointment');
@@ -273,6 +275,8 @@ app.use('/api/blood-requests', bloodRoutes);
 app.use('/api/health-tips', tipRoutes);
 app.use('/api/lab-tests', labTestRoutes);
 app.use('/api/test-bookings', testBookingRoutes);
+app.use('/api/medicines', medicineRoutes);
+app.use('/api/medicine-orders', medicineOrderRoutes);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
