@@ -20,6 +20,9 @@ const Dashboard = () => {
   // Helper to check if user is a doctor (handles case sensitivity)
   const isDoctor = user?.role?.toLowerCase() === 'doctor';
 
+  // Helper to check if user is an admin
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'hospital_admin';
+
   return (
     <div className="auth-container">
       {/* Header */}
@@ -109,6 +112,22 @@ const Dashboard = () => {
                     </>
                   )}
 
+                  {/* Admin-only buttons */}
+                  {isAdmin && (
+                    <>
+                      <Link to="/admin/lab-tests">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                          ⚙️ Lab Test Administration
+                        </button>
+                      </Link>
+                      <Link to="/admin/medicine-orders">
+                        <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
+                          💊 Medicine Store Control
+                        </button>
+                      </Link>
+                    </>
+                  )}
+
                   <Link to="/hospitals">
                     <button className="btn-submit" style={{ padding: '10px 20px' }}>
                       🏥 Find Hospitals
@@ -127,6 +146,11 @@ const Dashboard = () => {
                   <Link to="/lab-tests">
                     <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
                       🧪 Lab Tests
+                    </button>
+                  </Link>
+                  <Link to="/medicine-store">
+                    <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#e67e22', color: 'white' }}>
+                      💊 Medicine Store
                     </button>
                   </Link>
                 </div>

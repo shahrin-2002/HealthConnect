@@ -26,6 +26,8 @@ const bloodRoutes = require('./routes/bloodRoutes');
 const tipRoutes = require('./routes/tipRoutes');
 const labTestRoutes = require('./routes/labTestRoutes');
 const testBookingRoutes = require('./routes/testBookingRoutes');
+const medicineRoutes = require('./routes/medicineRoutes');
+const medicineOrderRoutes = require('./routes/medicineOrderRoutes');
 
 // Import models for Socket.io handlers
 const Appointment = require('./models/Appointment');
@@ -128,18 +130,32 @@ io.on('connection', (socket) => {
     const call = activeCalls.get(appointmentId);
     if (call) {
       call.status = 'ready';
-      const doctorSocketId = userSockets.get(doctorId);
+      // Use the stored doctorId from the call (more reliable than client-sent data)
+      const storedDoctorId = call.doctorId || doctorId;
+      console.log(`[Socket] Patient ready - looking for doctor: ${storedDoctorId}`);
+      console.log(`[Socket] Connected users:`, Array.from(userSockets.keys()));
+
+      const doctorSocketId = userSockets.get(storedDoctorId);
       if (doctorSocketId) {
         io.to(doctorSocketId).emit('call:patient-ready', { appointmentId });
-        console.log(`[Socket] Patient ready for call: ${appointmentId}`);
+        console.log(`[Socket] Patient ready notification sent for call: ${appointmentId}`);
+      } else {
+        console.log(`[Socket] Doctor socket not found for: ${storedDoctorId}`);
+        socket.emit('call:error', { message: 'Doctor is no longer connected' });
       }
+    } else {
+      console.log(`[Socket] No active call found for: ${appointmentId}`);
+      socket.emit('call:error', { message: 'Call session not found' });
     }
   });
 
   // Patient declines call
   socket.on('call:decline', ({ appointmentId, doctorId }) => {
+    const call = activeCalls.get(appointmentId);
+    const storedDoctorId = call?.doctorId || doctorId;
     activeCalls.delete(appointmentId);
-    const doctorSocketId = userSockets.get(doctorId);
+
+    const doctorSocketId = userSockets.get(storedDoctorId);
     if (doctorSocketId) {
       io.to(doctorSocketId).emit('call:declined', { appointmentId });
       console.log(`[Socket] Call declined: ${appointmentId}`);
@@ -268,6 +284,8 @@ app.use('/api/blood-requests', bloodRoutes);
 app.use('/api/health-tips', tipRoutes);
 app.use('/api/lab-tests', labTestRoutes);
 app.use('/api/test-bookings', testBookingRoutes);
+app.use('/api/medicines', medicineRoutes);
+app.use('/api/medicine-orders', medicineOrderRoutes);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
