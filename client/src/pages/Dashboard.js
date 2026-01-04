@@ -92,7 +92,7 @@ const Dashboard = () => {
               <div style={{ marginTop: '30px' }}>
                 <h3 style={{ marginBottom: '15px', color: '#2B2B2B' }}>Quick Links</h3>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  
+
                   {/* Doctor-only buttons */}
                   {isDoctor && (
                     <>
@@ -122,6 +122,11 @@ const Dashboard = () => {
                   <Link to="/appointments">
                     <button className="btn-submit" style={{ padding: '10px 20px' }}>
                       📅 My Appointments
+                    </button>
+                  </Link>
+                  <Link to="/lab-tests">
+                    <button className="btn-submit" style={{ padding: '10px 20px', backgroundColor: '#8e44ad', color: 'white' }}>
+                      🧪 Lab Tests
                     </button>
                   </Link>
                 </div>

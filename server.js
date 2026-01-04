@@ -24,6 +24,8 @@ const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const bloodRoutes = require('./routes/bloodRoutes');
 const tipRoutes = require('./routes/tipRoutes');
+const labTestRoutes = require('./routes/labTestRoutes');
+const testBookingRoutes = require('./routes/testBookingRoutes');
 
 // Import models for Socket.io handlers
 const Appointment = require('./models/Appointment');
@@ -221,6 +223,9 @@ io.on('connection', (socket) => {
 app.use(cors());
 app.use(express.json());
 
+// Serve static files for uploaded reports
+app.use('/uploads', express.static('uploads'));
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -252,6 +257,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/blood-requests', bloodRoutes);
 app.use('/api/health-tips', tipRoutes);
+app.use('/api/lab-tests', labTestRoutes);
+app.use('/api/test-bookings', testBookingRoutes);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {

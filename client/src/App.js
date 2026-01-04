@@ -25,6 +25,9 @@ import DoctorOnlineAppointments from './pages/DoctorOnlineAppointments';
 import ICUBooking from './pages/ICUBooking';
 import GeneralBedBooking from './pages/GeneralBedBooking';
 import CabinBooking from './pages/CabinBooking';
+// Lab Test Feature
+import LabTest from './pages/LabTest';
+import LabTestAdmin from './pages/LabTestAdmin';
 import './App.css';
 
 // Protected Route Component
@@ -60,6 +63,14 @@ const RoleGuard = ({ role, children }) => {
   const userRole = user?.role?.toLowerCase();
   const requiredRole = role?.toLowerCase();
   return userRole === requiredRole ? children : <div>Access denied</div>;
+};
+
+// Admin Role Guard (accepts both Hospital_Admin and admin)
+const AdminRoleGuard = ({ children }) => {
+  const { user } = useAuth();
+  const userRole = user?.role?.toLowerCase();
+  const isAdmin = userRole === 'hospital_admin' || userRole === 'admin';
+  return isAdmin ? children : <div>Access denied. Admin privileges required.</div>;
 };
 
 function AppContent() {
@@ -160,6 +171,19 @@ function AppContent() {
               <RoleGuard role="doctor">
                 <DoctorOnlineAppointments />
               </RoleGuard>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Lab Test Routes */}
+        <Route path="/lab-tests" element={<LabTest />} />
+        <Route
+          path="/admin/lab-tests"
+          element={
+            <ProtectedRoute>
+              <AdminRoleGuard>
+                <LabTestAdmin />
+              </AdminRoleGuard>
             </ProtectedRoute>
           }
         />
