@@ -239,7 +239,7 @@ exports.listForDoctor = async (req, res) => {
 // PATCH /api/appointments/:id/approve - Doctor approves appointment
 exports.approve = async (req, res) => {
   const { id } = req.params;
-  const doctorUserId = req.user.id;
+  const loggedInUserId = req.user.id;
 
   try {
     const appt = await Appointment.findById(id).populate('doctorId');
@@ -247,10 +247,15 @@ exports.approve = async (req, res) => {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    // Check if the doctor owns this appointment (doctorId references Doctor model which has user_id)
-    if (appt.doctorId?.user_id?.toString() !== doctorUserId &&
-        appt.doctorId?._id?.toString() !== doctorUserId) {
-      return res.status(403).json({ error: 'Unauthorized' });
+    // Find the doctor profile for the logged-in user
+    const doctorProfile = await Doctor.findOne({ user_id: loggedInUserId });
+
+    // Check if logged-in user is the doctor for this appointment
+    const appointmentDoctorId = appt.doctorId?._id?.toString() || appt.doctorId?.toString();
+    const loggedInDoctorId = doctorProfile?._id?.toString();
+
+    if (!doctorProfile || appointmentDoctorId !== loggedInDoctorId) {
+      return res.status(403).json({ error: 'Unauthorized - You can only approve your own appointments' });
     }
 
     if (appt.status === 'cancelled') {
@@ -269,12 +274,23 @@ exports.approve = async (req, res) => {
 // PATCH /api/appointments/:id/complete - Mark appointment as completed
 exports.complete = async (req, res) => {
   const { id } = req.params;
-  const doctorUserId = req.user.id;
+  const loggedInUserId = req.user.id;
 
   try {
     const appt = await Appointment.findById(id).populate('doctorId');
     if (!appt) {
       return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // Find the doctor profile for the logged-in user
+    const doctorProfile = await Doctor.findOne({ user_id: loggedInUserId });
+
+    // Check if logged-in user is the doctor for this appointment
+    const appointmentDoctorId = appt.doctorId?._id?.toString() || appt.doctorId?.toString();
+    const loggedInDoctorId = doctorProfile?._id?.toString();
+
+    if (!doctorProfile || appointmentDoctorId !== loggedInDoctorId) {
+      return res.status(403).json({ error: 'Unauthorized - You can only complete your own appointments' });
     }
 
     appt.status = 'completed';
