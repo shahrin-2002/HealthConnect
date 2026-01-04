@@ -3,29 +3,36 @@
  * Shows list of online appointments with video call functionality
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { appointmentsAPI, doctorAPI } from '../services/api';
 import socketService from '../services/socket';
 import VideoCallModal from '../components/VideoCallModal';
-import './DoctorOnlineAppointments.css';
+import '../styles/Appointments.css';
 
 export default function DoctorOnlineAppointments() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [viewTab, setViewTab] = useState('upcoming');
+  const [highlightedId, setHighlightedId] = useState(null);
+
+  // Refs for scrolling
+  const appointmentRefs = useRef({});
 
   // Video call state
-  const [callStates, setCallStates] = useState({}); // { appointmentId: 'idle' | 'waiting' | 'ready' }
-  const [activeCall, setActiveCall] = useState(null); // { appointmentId, patientId, patientName }
+  const [callStates, setCallStates] = useState({});
+  const [activeCall, setActiveCall] = useState(null);
 
   // Load online appointments
   const loadAppointments = useCallback(async () => {
     try {
       let doctorId = user?.doctorId;
 
-      // If doctorId not in user object, fetch from doctor profile API
       if (!doctorId) {
         try {
           const profileRes = await doctorAPI.getMyProfile();
@@ -36,47 +43,41 @@ export default function DoctorOnlineAppointments() {
       }
 
       if (!doctorId) {
-        setMsg('Doctor profile not found');
+        setMessage({ type: 'error', text: 'Doctor profile not found' });
         setLoading(false);
         return;
       }
 
-      // Get doctor's appointments and filter for online type
       const { data } = await appointmentsAPI.doctor(doctorId);
       const onlineAppts = (data.appointments || []).filter(a => a.type === 'online');
       setAppointments(onlineAppts);
 
-      // Initialize call states for all appointments
       const states = {};
       onlineAppts.forEach(a => {
         states[a._id] = callStates[a._id] || 'idle';
       });
       setCallStates(states);
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Failed to load appointments');
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to load appointments' });
     } finally {
       setLoading(false);
     }
   }, [user, callStates]);
 
-  // Set up socket listeners on mount
+  // Socket listeners
   useEffect(() => {
-    // Listen for patient ready
     socketService.onPatientReady(({ appointmentId }) => {
       setCallStates(prev => ({ ...prev, [appointmentId]: 'ready' }));
-      setMsg('Patient is ready for the call!');
+      setMessage({ type: 'success', text: 'Patient is ready for the call!' });
     });
 
-    // Listen for patient decline
     socketService.onCallDeclined(({ appointmentId }) => {
       setCallStates(prev => ({ ...prev, [appointmentId]: 'idle' }));
-      setMsg('Patient declined the call');
+      setMessage({ type: 'error', text: 'Patient declined the call' });
     });
 
-    // Listen for call errors
     socketService.onCallError(({ message }) => {
-      setMsg(message);
-      // Reset all waiting states to idle
+      setMessage({ type: 'error', text: message });
       setCallStates(prev => {
         const updated = { ...prev };
         Object.keys(updated).forEach(key => {
@@ -102,21 +103,61 @@ export default function DoctorOnlineAppointments() {
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initiate call to patient
+  // Handle scroll to specific appointment from URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const scrollToId = params.get('id');
+
+    if (scrollToId && !loading && appointments.length > 0) {
+      // Find the appointment and determine if it's in upcoming or archived
+      const apt = appointments.find(a => a._id === scrollToId);
+      if (apt) {
+        const isArchived = ['completed', 'cancelled'].includes(apt.status);
+        if (isArchived && viewTab !== 'archived') {
+          setViewTab('archived');
+        } else if (!isArchived && viewTab !== 'upcoming') {
+          setViewTab('upcoming');
+        }
+
+        // Scroll after a small delay to ensure DOM is ready
+        setTimeout(() => {
+          const element = appointmentRefs.current[scrollToId];
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setHighlightedId(scrollToId);
+            // Remove highlight after animation
+            setTimeout(() => setHighlightedId(null), 2000);
+          }
+        }, 100);
+      }
+    }
+  }, [location.search, loading, appointments, viewTab]);
+
+  // Filter appointments
+  const getFilteredAppointments = () => {
+    if (viewTab === 'upcoming') {
+      return appointments.filter(a =>
+        ['booked', 'approved', 'waitlisted', 'rescheduled'].includes(a.status)
+      );
+    } else {
+      return appointments.filter(a =>
+        ['completed', 'cancelled'].includes(a.status)
+      );
+    }
+  };
+
   const initiateCall = (appointment) => {
     const patientId = appointment.patientId?._id || appointment.patientId;
     socketService.initiateCall(appointment._id, patientId);
     setCallStates(prev => ({ ...prev, [appointment._id]: 'waiting' }));
-    setMsg('Calling patient... waiting for response');
+    setMessage({ type: 'info', text: 'Calling patient... waiting for response' });
   };
 
-  // Cancel waiting for patient
   const cancelWaiting = (appointmentId) => {
     setCallStates(prev => ({ ...prev, [appointmentId]: 'idle' }));
-    setMsg('');
+    setMessage({ type: '', text: '' });
   };
 
-  // Start video call (when patient is ready)
   const startVideoCall = (appointment) => {
     setActiveCall({
       appointmentId: appointment._id,
@@ -125,133 +166,225 @@ export default function DoctorOnlineAppointments() {
     });
   };
 
-  // Close video call
   const closeVideoCall = () => {
     if (activeCall) {
       setCallStates(prev => ({ ...prev, [activeCall.appointmentId]: 'idle' }));
     }
     setActiveCall(null);
-    setMsg('');
+    setMessage({ type: '', text: '' });
   };
 
-  // Mark appointment as completed
   const markCompleted = async (appointment) => {
     try {
       await appointmentsAPI.complete(appointment._id);
-      // Notify patient in real-time
       const patientId = appointment.patientId?._id || appointment.patientId;
       socketService.notifyAppointmentUpdate(appointment._id, patientId, 'completed');
-      setMsg('Appointment marked as completed');
+      setMessage({ type: 'success', text: 'Appointment marked as completed' });
       loadAppointments();
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Failed to update');
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update' });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="online-appointments-container">
-        <div className="loading">Loading...</div>
-      </div>
-    );
-  }
+  const handleApprove = async (id) => {
+    try {
+      await appointmentsAPI.approve(id);
+      setMessage({ type: 'success', text: 'Appointment approved!' });
+      await loadAppointments();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Approval failed' });
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (dateStr) => {
+    return new Date(dateStr).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
-    <div className="online-appointments-container">
-      <div className="page-header">
-        <h1>Online Appointments</h1>
-        <p>View and manage your online video appointments</p>
+    <div className="appointments-container">
+      {/* Header */}
+      <div className="appointments-header">
+        <button className="hamburger-menu">&#9776;</button>
+        <h1>HealthConnect</h1>
+        <div></div>
       </div>
 
-      {msg && <div className="message">{msg}</div>}
-
-      {appointments.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📅</div>
-          <h3>No Online Appointments</h3>
-          <p>You don't have any online appointments scheduled yet.</p>
+      {/* Navigation */}
+      <nav className="appointments-nav">
+        <div className="nav-logo">
+          <span>&#127973;</span>
         </div>
-      ) : (
-        <div className="appointments-grid">
-          {appointments.map((appt) => (
-            <div key={appt._id} className="appointment-card">
-              <div className="patient-info">
-                <div className="patient-avatar">
-                  {appt.patientId?.name?.charAt(0) || '?'}
-                </div>
-                <div className="patient-details">
-                  <h3>{appt.patientId?.name || 'Unknown Patient'}</h3>
-                  <p>{appt.patientId?.email}</p>
-                </div>
-              </div>
+        <ul className="nav-links">
+          <li><Link to="/doctor/appointments">My Appointments</Link></li>
+          <li><Link to="/doctor/online-appointments" className="active">Online Calls</Link></li>
+          <li><Link to="/doctor/schedule">Manage Schedule</Link></li>
+          <li><Link to="/dashboard">Dashboard</Link></li>
+        </ul>
+        <div className="nav-buttons">
+          <button className="btn-dark" onClick={handleLogout}>Logout</button>
+        </div>
+      </nav>
 
-              <div className="appointment-meta">
-                <div className="meta-item">
-                  <span className="meta-label">Scheduled</span>
-                  <span className="meta-value">
-                    {new Date(appt.slotId?.date || appt.date).toLocaleString()}
-                  </span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Status</span>
-                  <span className={`status-badge ${appt.status}`}>{appt.status}</span>
-                </div>
-              </div>
+      {/* Title Section */}
+      <div className="appointments-title-section">
+        <h2>&#128249; Online Consultations</h2>
+        <p>Manage your video call appointments with patients</p>
+      </div>
 
-              {/* Video Call Actions */}
-              {appt.status !== 'completed' && appt.status !== 'cancelled' && (
-                <div className="appointment-actions">
-                  {/* Idle state - Show Start Call button */}
-                  {(!callStates[appt._id] || callStates[appt._id] === 'idle') && (
-                    <button
-                      className="btn-start-call"
-                      onClick={() => initiateCall(appt)}
-                    >
-                      Start Call
-                    </button>
-                  )}
-
-                  {/* Waiting state - Show waiting indicator */}
-                  {callStates[appt._id] === 'waiting' && (
-                    <div className="waiting-state">
-                      <div className="waiting-indicator">
-                        <span className="dot"></span>
-                        <span className="dot"></span>
-                        <span className="dot"></span>
-                      </div>
-                      <span>Waiting for patient...</span>
-                      <button
-                        className="btn-cancel-waiting"
-                        onClick={() => cancelWaiting(appt._id)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Ready state - Show Join Call button */}
-                  {callStates[appt._id] === 'ready' && (
-                    <button
-                      className="btn-join-call"
-                      onClick={() => startVideoCall(appt)}
-                    >
-                      Patient Ready - Join Call
-                    </button>
-                  )}
-
-                  {/* Mark as completed button */}
-                  <button
-                    className="btn-complete"
-                    onClick={() => markCompleted(appt)}
-                  >
-                    Mark as Completed
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+      {/* Message */}
+      {message.text && (
+        <div className={`message ${message.type}`}>
+          {message.text}
         </div>
       )}
+
+      {/* Appointments List */}
+      <div className="appointments-list-section">
+        <div className="section-header">
+          <h3>Online Appointments</h3>
+          <div className="view-tabs">
+            <button
+              className={`tab-btn ${viewTab === 'upcoming' ? 'active' : ''}`}
+              onClick={() => setViewTab('upcoming')}
+            >
+              Upcoming
+            </button>
+            <button
+              className={`tab-btn ${viewTab === 'archived' ? 'active' : ''}`}
+              onClick={() => setViewTab('archived')}
+            >
+              Archived
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading">Loading appointments...</div>
+        ) : getFilteredAppointments().length === 0 ? (
+          <div className="no-appointments">
+            <span>&#128249;</span>
+            <p>No {viewTab} online appointments.</p>
+          </div>
+        ) : (
+          <div className="appointments-grid">
+            {getFilteredAppointments().map((apt) => {
+              const patient = apt.patientId;
+              const callState = callStates[apt._id] || 'idle';
+              const canApprove = apt.status === 'booked';
+              const canCall = apt.status === 'approved';
+              const isHighlighted = highlightedId === apt._id;
+
+              return (
+                <div
+                  key={apt._id}
+                  ref={el => appointmentRefs.current[apt._id] = el}
+                  className={`appointment-card ${isHighlighted ? 'highlighted' : ''}`}
+                >
+                  <div className="appointment-card-header">
+                    <div className="doctor-avatar">
+                      {patient?.name?.charAt(0) || 'P'}
+                    </div>
+                    <div className="doctor-details">
+                      <h4>{patient?.name || 'Patient'}</h4>
+                      <p>{patient?.email || 'No email'}</p>
+                    </div>
+                    <span className="type-badge online">
+                      &#128249; Online
+                    </span>
+                  </div>
+
+                  <div className="appointment-card-body">
+                    <div className="info-row">
+                      <span>&#128197;</span>
+                      {formatDate(apt.date)}
+                    </div>
+                    <div className="info-row">
+                      <span>&#128336;</span>
+                      {formatTime(apt.date)}
+                    </div>
+                    {apt.notes && (
+                      <div className="info-row">
+                        <span>&#128221;</span>
+                        {apt.notes}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="appointment-card-footer">
+                    <span className={`status-badge ${apt.status}`}>
+                      {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                    </span>
+                    <div className="card-actions">
+                      {canApprove && (
+                        <button
+                          className="btn-book"
+                          onClick={() => handleApprove(apt._id)}
+                        >
+                          Approve
+                        </button>
+                      )}
+                      {canCall && callState === 'idle' && (
+                        <button
+                          className="btn-book btn-call"
+                          onClick={() => initiateCall(apt)}
+                        >
+                          &#128222; Start Call
+                        </button>
+                      )}
+                      {canCall && callState === 'waiting' && (
+                        <div className="call-waiting">
+                          <span className="waiting-dots">
+                            <span></span><span></span><span></span>
+                          </span>
+                          <button
+                            className="btn-secondary btn-small"
+                            onClick={() => cancelWaiting(apt._id)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      {canCall && callState === 'ready' && (
+                        <button
+                          className="btn-book btn-join"
+                          onClick={() => startVideoCall(apt)}
+                        >
+                          &#127909; Join Call
+                        </button>
+                      )}
+                      {canCall && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => markCompleted(apt)}
+                        >
+                          Complete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Video Call Modal */}
       {activeCall && (

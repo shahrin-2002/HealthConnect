@@ -254,8 +254,19 @@ export default function DoctorSlots() {
               const canComplete = apt.status === 'approved';
               const canCall = apt.type === 'online' && apt.status === 'approved';
 
+              const handleCardClick = () => {
+                if (apt.type === 'online') {
+                  navigate(`/doctor/online-appointments?id=${apt._id}`);
+                }
+              };
+
               return (
-                <div key={apt._id} className="appointment-card">
+                <div
+                  key={apt._id}
+                  className={`appointment-card ${apt.type === 'online' ? 'clickable' : ''}`}
+                  onClick={apt.type === 'online' ? handleCardClick : undefined}
+                  style={apt.type === 'online' ? { cursor: 'pointer' } : {}}
+                >
                   <div className="appointment-card-header">
                     <div className="doctor-avatar">
                       {patient?.name?.charAt(0) || 'P'}
@@ -290,7 +301,7 @@ export default function DoctorSlots() {
                     <span className={`status-badge ${apt.status}`}>
                       {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
                     </span>
-                    <div className="card-actions">
+                    <div className="card-actions" onClick={(e) => e.stopPropagation()}>
                       {canApprove && (
                         <button
                           className="btn-book"
